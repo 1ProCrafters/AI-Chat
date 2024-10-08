@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            background-color: #343541;
+            color: #FFFFFF;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background-color: #202123;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+
+        .new-chat-btn {
+            background-color: #40414f;
+            border: 1px solid #565869;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: background-color 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #4e4f60;
+        }
+
+        .conversations-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conversation-item:hover {
+            background-color: #40414f;
+        }
+
+        .conversation-item.active {
+            background-color: #40414f;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            width: 100%;
+        }
+
+        .chat-header {
+            padding: 1rem 0;
+            text-align: center;
+            border-bottom: 1px solid #4e4f60;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .message {
+            display: flex;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid #4e4f60;
+        }
+
+        .message-content {
+            max-width: 90%;
+            line-height: 1.5;
+        }
+
+        .user-message {
+            background-color: #343541;
+        }
+
+        .assistant-message {
+            background-color: #444654;
+        }
+
+        .message-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            width: 100%;
+        }
+
+        .input-container {
+            position: sticky;
+            bottom: 0;
+            padding: 1rem 0;
+            background-color: #343541;
+        }
+
+        .input-box {
+            display: flex;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #40414f;
+            border-radius: 0.5rem;
+            border: 1px solid #565869;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            padding: 0.75rem;
+        }
+
+        textarea {
+            flex-grow: 1;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            resize: none;
+            height: 24px;
+            max-height: 200px;
+            outline: none;
+            padding: 0 0.5rem;
+            line-height: 1.5;
+        }
+
+        .send-button {
+            background: none;
+            border: none;
+            color: #8e8ea0;
+            cursor: pointer;
+            padding: 0 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .send-button:hover {
+            color: white;
+        }
+
+        .message-role {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <button class="new-chat-btn" id="new-chat-btn">+ New Chat</button>
+        <div class="conversations-list" id="conversations-list">
+            <!-- Conversations will be listed here -->
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>AI Chat Interface</h1>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be dynamically added here -->
+            </div>
+
+            <div class="input-container">
+                <div class="input-box">
+                    <textarea id="message-input" placeholder="Type a message..." rows="1"></textarea>
+                    <button class="send-button" id="send-button">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ChatApp {
+            constructor() {
+                this.conversations = new Map();
+                this.currentConversationId = null;
+
+                // DOM elements
+                this.messageInput = document.getElementById('message-input');
+                this.sendButton = document.getElementById('send-button');
+                this.chatMessages = document.getElementById('chat-messages');
+                this.conversationsList = document.getElementById('conversations-list');
+                this.newChatBtn = document.getElementById('new-chat-btn');
+
+                // Bind event listeners
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.messageInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                this.messageInput.addEventListener('input', this.autoResizeInput.bind(this));
+                this.newChatBtn.addEventListener('click', () => this.createNewConversation());
+
+                // Initialize the app
+                this.init();
+            }
+
+            async init() {
+                await this.loadConversations();
+                if (this.conversations.size === 0) {
+                    this.createNewConversation();
+                } else {
+                    // Load the most recent conversation
+                    const lastConversationId = Array.from(this.conversations.keys()).pop();
+                    this.loadConversation(lastConversationId);
+                }
+            }
+
+            async loadConversations() {
+                try {
+                    const response = await fetch('/list-conversations');
+                    const conversations = await response.json();
+
+                    conversations.forEach(conv => {
+                        this.conversations.set(conv.id, conv);
+                        this.addConversationToSidebar(conv);
+                    });
+                } catch (error) {
+                    console.error('Error loading conversations:', error);
+                }
+            }
+
+            createNewConversation() {
+                const conversationId = Date.now().toString();
+                const conversation = {
+                    id: conversationId,
+                    title: 'New Conversation',
+                    messages: []
+                };
+
+                this.conversations.set(conversationId, conversation);
+                this.addConversationToSidebar(conversation);
+                this.saveConversation(conversation);
+                this.loadConversation(conversationId);
+            }
+
+            addConversationToSidebar(conversation) {
+                const item = document.createElement('div');
+                item.className = 'conversation-item';
+                item.textContent = conversation.title;
+                item.dataset.id = conversation.id;
+
+                item.addEventListener('click', () => {
+                    this.loadConversation(conversation.id);
+                });
+
+                this.conversationsList.insertBefore(item, this.conversationsList.firstChild);
+            }
+
+            async loadConversation(conversationId) {
+                const conversation = this.conversations.get(conversationId);
+                if (!conversation) return;
+
+                // Update active conversation
+                this.currentConversationId = conversationId;
+
+                // Update sidebar selection
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.id === conversationId) {
+                        item.classList.add('active');
+                    }
+                });
+
+                // Clear and reload messages
+                this.chatMessages.innerHTML = '';
+                conversation.messages.forEach(msg => {
+                    this.addMessageToUI(msg.content, msg.role);
+                });
+            }
+
+            async saveConversation(conversation) {
+                try {
+                    await fetch('/save-conversation', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(conversation)
+                    });
+                } catch (error) {
+                    console.error('Error saving conversation:', error);
+                }
+            }
+
+            addMessageToUI(content, role) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}-message`;
+
+                const messageContainer = document.createElement('div');
+                messageContainer.className = 'message-container';
+
+                messageContainer.innerHTML = `
+                    <div class="message-role">${role === 'user' ? 'You' : 'Assistant'}</div>
+                    <div class="message-content">${content}</div>
+                `;
+
+                messageDiv.appendChild(messageContainer);
+                this.chatMessages.appendChild(messageDiv);
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message || !this.currentConversationId) return;
+
+                const conversation = this.conversations.get(this.currentConversationId);
+
+                // Add user message
+                this.addMessageToUI(message, 'user');
+                conversation.messages.push({
+                    role: 'user',
+                    content: message,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Update conversation title if it's the first message
+                if (conversation.messages.length === 1) {
+                    conversation.title = message.slice(0, 30) + (message.length > 30 ? '...' : '');
+                    const sidebarItem = document.querySelector(`[data-id="${this.currentConversationId}"]`);
+                    if (sidebarItem) sidebarItem.textContent = conversation.title;
+                }
+
+                // Clear input
+                this.messageInput.value = '';
+                this.messageInput.style.height = '24px';
+
+                // Simulate AI response (replace with actual AI integration)
+                setTimeout(() => {
+                    const aiResponse = `This is a simulated response to: "${message}"`;
+                    this.addMessageToUI(aiResponse, 'assistant');
+                    conversation.messages.push({
+                        role: 'assistant',
+                        content: aiResponse,
+                        timestamp: new Date().toISOString()
+                    });
+                    this.saveConversation(conversation);
+                }, 500);
+            }
+
+            autoResizeInput() {
+                this.messageInput.style.height = '24px';
+                this.messageInput.style.height = this.messageInput.scrollHeight + 'px';
+            }
+        }
+
+        // Initialize the app
+        const chatApp = new ChatApp();
+    </script>
+</body>
+
+</html>

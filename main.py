@@ -2,7 +2,7 @@
 
 import json
 import os
-from ai_person import AiPerson
+from server.ai_person import AiPerson
 
 def create_ai_person() -> AiPerson:
     """
