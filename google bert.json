@@ -1,1 +1,0 @@
-{"name": "google bert", "prompt": "You will answer questions of the user", "model_name": "google-bert/bert-large-uncased-whole-word-masking-finetuned-squad"}
