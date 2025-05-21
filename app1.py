@@ -3,25 +3,20 @@ from streamlit_chat import message
 from streamlit_extras.colored_header import colored_header
 from streamlit_extras.add_vertical_space import add_vertical_space
 from hugchat import hugchat
-from hugchat.login import Login
 
 st.set_page_config(page_title="HugChat - An LLM-powered Streamlit app")
 
 # Sidebar contents
 with st.sidebar:
     st.title('🤗💬 HugChat App')
-    
-    st.header('Hugging Face Login')
-    hf_email = st.text_input('Enter E-mail:', type='password')
-    hf_pass = st.text_input('Enter password:', type='password')
-    
     st.markdown('''
     ## About
     This app is an LLM-powered chatbot built using:
     - [Streamlit](https://streamlit.io/)
     - [HugChat](https://github.com/Soulter/hugging-chat-api)
     - [OpenAssistant/oasst-sft-6-llama-30b-xor](https://huggingface.co/OpenAssistant/oasst-sft-6-llama-30b-xor) LLM model
-
+    
+    💡 Note: No API key required!
     ''')
     add_vertical_space(5)
     st.write('Made with ❤️ by [Data Professor](https://youtube.com/dataprofessor)')
@@ -50,20 +45,15 @@ with input_container:
 
 # Response output
 ## Function for taking user prompt as input followed by producing AI generated responses
-def generate_response(prompt, email, passwd):
-    # Hugging Face Login
-    sign = Login(email, passwd)
-    cookies = sign.login()
-    sign.saveCookies()
-    # Create ChatBot                        
-    chatbot = hugchat.ChatBot(cookies=cookies.get_dict())
+def generate_response(prompt):
+    chatbot = hugchat.ChatBot()
     response = chatbot.chat(prompt)
     return response
 
 ## Conditional display of AI generated responses as a function of user provided prompts
 with response_container:
-    if user_input and hf_email and hf_pass:
-        response = generate_response(user_input, hf_email, hf_pass)
+    if user_input:
+        response = generate_response(user_input)
         st.session_state.past.append(user_input)
         st.session_state.generated.append(response)
         
